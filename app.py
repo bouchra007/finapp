@@ -11,29 +11,27 @@ st.set_page_config(
     layout="centered"
 )
 
-# Forcer le mode clair sur l'ensemble des éléments HTML et des cartes
+# Forcer le mode clair et ajouter des bordures nettes autour des cases
 st.markdown("""
     <style>
-    /* Fond principal */
+    /* Fond principal blanc et texte noir */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
         background-color: #ffffff !important;
         color: #000000 !important;
     }
-    /* Textes, titres et labels */
     h1, h2, h3, h4, h5, h6, p, label, span, div {
         color: #000000 !important;
     }
-    /* Blocs et cartes */
-    [data-testid="stVerticalBlock"] > div {
+    /* Garde le fond blanc et AJOUTE une bordure bien visible autour des cases */
+    input, select, textarea, div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
-    }
-    /* Champs de texte */
-    input {
-        background-color: #f0f2f6 !important;
+        border: 2px solid #555555 !important;
+        border-radius: 6px !important;
         color: #000000 !important;
     }
     </style>
 """, unsafe_allow_html=True)
+
 def init_db():
     conn = sqlite3.connect("finapp.db")
     cursor = conn.cursor()
