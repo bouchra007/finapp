@@ -703,7 +703,7 @@ else:
             banques_df = pd.read_sql_query("SELECT nom FROM tiers WHERE email = ? AND role = 'Établissement de crédit'", conn, params=(st.session_state.user_email,))
             conn.close()
             
-            liste_banques = banques_df["Nom"].tolist() if not banques_df.empty else []
+            liste_banques = banques_df["nom"].tolist() if not banques_df.empty else []
 
             with st.form(f"form_emprunt_{st.session_state.form_key}"):
                 col_e1, col_e2 = st.columns(2)
