@@ -34,7 +34,7 @@ st.markdown("""
 
 # --- TITRE DANS LA BARRE DE GAUCHE ---
 st.sidebar.title("Mon Application Financière")
-st.sidebar.caption("Bienvenue sur l'application en mode clair.")
+st.sidebar.caption("Plateforme de gestion financière")
 st.sidebar.divider()
 
 def init_db():
@@ -682,9 +682,5 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
-st.sidebar.title("Mon Application Financière")
-st.sidebar.caption("Plateforme de gestion financière")
-st.sidebar.divider()
 
 
