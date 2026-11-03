@@ -661,7 +661,8 @@ else:
                     else:
                         st.warning("Aucun article coché.")
             else:
-                st.info("Stock vide.")import streamlit as st
+                st.info("Stock vide.")
+                import streamlit as st
 
 st.set_page_config(
     page_title="Finapp",
