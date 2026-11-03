@@ -104,12 +104,24 @@ def init_db():
         )
     """)
     
+    # Migrations automatiques pour éviter les erreurs si la base existait déjà
     try:
         cursor.execute("ALTER TABLE transactions ADD COLUMN compte TEXT")
     except:
         pass
     try:
         cursor.execute("ALTER TABLE tiers ADD COLUMN compte_auxiliaire TEXT")
+    except:
+        pass
+    try:
+        cursor.execute("ALTER TABLE transactions ADD COLUMN montant REAL")
+        # Si l'ancienne colonne montant_ttc existait, on bascule sa valeur vers montant
+        cursor.execute("UPDATE transactions SET montant = montant_ttc WHERE montant IS NULL AND montant_ttc IS NOT NULL")
+    except:
+        pass
+    try:
+        cursor.execute("ALTER TABLE devis ADD COLUMN montant REAL")
+        cursor.execute("UPDATE devis SET montant = montant_ttc WHERE montant IS NULL AND montant_ttc IS NOT NULL")
     except:
         pass
 
