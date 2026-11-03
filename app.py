@@ -3,8 +3,6 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 
-import streamlit as st
-
 st.set_page_config(
     page_title="Fin'App",
     page_icon="📊",
@@ -53,8 +51,7 @@ def init_db():
             email TEXT,
             libelle TEXT,
             type TEXT,
-            montant_ht REAL,
-            montant_ttc REAL,
+            montant REAL,
             date TEXT,
             echeance TEXT,
             statut TEXT,
@@ -67,8 +64,7 @@ def init_db():
             email TEXT,
             num_devis TEXT,
             client TEXT,
-            montant_ht REAL,
-            montant_ttc REAL,
+            montant REAL,
             date TEXT,
             statut TEXT
         )
@@ -92,6 +88,19 @@ def init_db():
             categorie TEXT,
             quantite INTEGER,
             prix_ht REAL
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS emprunts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT,
+            libelle TEXT,
+            banque TEXT,
+            montant_total REAL,
+            taux REAL,
+            duree_mois INTEGER,
+            mensualite REAL,
+            date_debut TEXT
         )
     """)
     
@@ -210,17 +219,17 @@ else:
 
     if is_pro:
         if is_auto_entrepreneur:
-            st.markdown("Plateforme Auto-entrepreneur : Trésorerie, Factures & Devis, Tiers et Stocks.")
-            tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Trésorerie", "Saisie des Flux", "Devis & Facturation", "Échéances & Gestion", "Annuaire Tiers", "Stocks & Articles"])
+            st.markdown("Plateforme Auto-entrepreneur : Trésorerie, Factures & Devis, Tiers, Stocks, TVA & Emprunts.")
+            tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(["Trésorerie", "Saisie des Flux", "Devis & Facturation", "Échéances & Gestion", "Annuaire Tiers", "Stocks & Articles", "TVA", "Emprunts"])
         else:
-            st.markdown("Plateforme ERP Pro : Trésorerie, Facturation, Annuaire Tiers et Stocks.")
-            tab1, tab2, tab3, tab4, tab5 = st.tabs(["Trésorerie", "Saisie des Flux", "Échéances & Gestion", "Annuaire Tiers", "Stocks & Articles"])
+            st.markdown("Plateforme ERP Pro : Trésorerie, Facturation, Annuaire Tiers, Stocks, TVA & Emprunts.")
+            tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Trésorerie", "Saisie des Flux", "Échéances & Gestion", "Annuaire Tiers", "Stocks & Articles", "TVA", "Emprunts"])
     else:
         st.markdown("Suivi du budget personnel.")
         tab1, tab2, tab3 = st.tabs(["Trésorerie & Budget", "Saisie des Flux", "Échéances & Gestion"])
 
     conn = sqlite3.connect("finapp.db")
-    raw_df = pd.read_sql_query("SELECT id, libelle, type, montant_ht, montant_ttc, date, echeance, statut, compte FROM transactions WHERE email = ?", conn, params=(st.session_state.user_email,))
+    raw_df = pd.read_sql_query("SELECT id, libelle, type, montant, date, echeance, statut, compte FROM transactions WHERE email = ?", conn, params=(st.session_state.user_email,))
     
     if not raw_df.empty:
         raw_df["date_obj"] = pd.to_datetime(raw_df["date"], errors="coerce")
@@ -231,19 +240,18 @@ else:
         raw_df["Échéance"] = raw_df["echeance_obj"].dt.strftime("%d/%m/%Y")
         
         if is_pro:
-            df_factures = raw_df[["id", "libelle", "type", "montant_ht", "montant_ttc", "Date", "Échéance", "statut", "compte"]].rename(columns={
+            df_factures = raw_df[["id", "libelle", "type", "montant", "Date", "Échéance", "statut", "compte"]].rename(columns={
                 "libelle": "Libellé / Tiers",
                 "type": "Type",
-                "montant_ht": "Montant HT",
-                "montant_ttc": "Montant TTC",
+                "montant": "Montant (€)",
                 "statut": "Statut",
                 "compte": "N° Compte"
             })
         else:
-            df_factures = raw_df[["id", "libelle", "type", "montant_ttc", "Date", "Échéance", "statut"]].rename(columns={
+            df_factures = raw_df[["id", "libelle", "type", "montant", "Date", "Échéance", "statut"]].rename(columns={
                 "libelle": "Libellé / Tiers",
                 "type": "Type",
-                "montant_ttc": "Montant",
+                "montant": "Montant (€)",
                 "statut": "Statut"
             })
         df_factures = df_factures.dropna(subset=["Libellé / Tiers"])
@@ -252,11 +260,11 @@ else:
         df_factures.index = range(1, len(df_factures) + 1)
     else:
         if is_pro:
-            df_factures = pd.DataFrame(columns=["id", "Libellé / Tiers", "Type", "Montant HT", "Montant TTC", "Date", "Échéance", "Statut", "N° Compte"])
+            df_factures = pd.DataFrame(columns=["id", "Libellé / Tiers", "Type", "Montant (€)", "Date", "Échéance", "Statut", "N° Compte"])
         else:
-            df_factures = pd.DataFrame(columns=["id", "Libellé / Tiers", "Type", "Montant", "Date", "Échéance", "Statut"])
+            df_factures = pd.DataFrame(columns=["id", "Libellé / Tiers", "Type", "Montant (€)", "Date", "Échéance", "Statut"])
 
-    df_devis = pd.read_sql_query("SELECT id, num_devis as 'Numéro Devis', client as 'Client', montant_ht as 'Montant HT', montant_ttc as 'Montant TTC', date as 'Date', statut as 'Statut' FROM devis WHERE email = ? ORDER BY date", conn, params=(st.session_state.user_email,))
+    df_devis = pd.read_sql_query("SELECT id, num_devis as 'Numéro Devis', client as 'Client', montant as 'Montant (€)', date as 'Date', statut as 'Statut' FROM devis WHERE email = ? ORDER BY date", conn, params=(st.session_state.user_email,))
     if not df_devis.empty:
         df_devis = df_devis.reset_index(drop=True)
         df_devis.index = range(1, len(df_devis) + 1)
@@ -266,20 +274,19 @@ else:
         df_tiers = df_tiers.reset_index(drop=True)
         df_tiers.index = range(1, len(df_tiers) + 1)
 
-    df_stocks = pd.read_sql_query("SELECT id, reference as 'Article / Référence', categorie as 'Catégorie', quantite as 'Quantité', prix_ht as 'Prix unitaire HT (€)' FROM stocks WHERE email = ? ORDER BY reference", conn, params=(st.session_state.user_email,))
+    df_stocks = pd.read_sql_query("SELECT id, reference as 'Article / Référence', categorie as 'Catégorie', quantite as 'Quantité', prix_ht as 'Prix unitaire (€)' FROM stocks WHERE email = ? ORDER BY reference", conn, params=(st.session_state.user_email,))
     if not df_stocks.empty:
         df_stocks = df_stocks.reset_index(drop=True)
         df_stocks.index = range(1, len(df_stocks) + 1)
     else:
-        df_stocks = pd.DataFrame(columns=["id", "Article / Référence", "Catégorie", "Quantité", "Prix unitaire HT (€)"])
+        df_stocks = pd.DataFrame(columns=["id", "Article / Référence", "Catégorie", "Quantité", "Prix unitaire (€)"])
 
     conn.close()
 
     with tab1:
         st.subheader(f"Indicateurs Clés - {st.session_state.profil}")
-        col_montant_col = "Montant TTC" if is_pro else "Montant"
-        total_revenus = df_factures[df_factures["Type"].isin(["Revenu", "Vente de Produits", "Prestation de Services", "Loyers perçus (SCI)"])][col_montant_col].sum() if not df_factures.empty else 0
-        total_charges = df_factures[df_factures["Type"] == "Charge / Dépense"][col_montant_col].sum() if not df_factures.empty else 0
+        total_revenus = df_factures[df_factures["Type"].isin(["Revenu", "Vente de Produits", "Prestation de Services", "Loyers perçus (SCI)"])]["Montant (€)"].sum() if not df_factures.empty else 0
+        total_charges = df_factures[df_factures["Type"] == "Charge / Dépense"]["Montant (€)"].sum() if not df_factures.empty else 0
         solde_net = total_revenus - total_charges
 
         if solde_net > 50:
@@ -320,12 +327,12 @@ else:
                 df_del_trans["Échéance"] = pd.to_datetime(df_del_trans["echeance"]).dt.strftime("%d/%m/%Y")
                 
                 if is_pro:
-                    df_del_trans = df_del_trans[["Supprimer", "libelle", "type", "montant_ht", "montant_ttc", "Date", "Échéance", "statut", "compte", "id"]].rename(columns={
-                        "libelle": "Libellé / Tiers", "type": "Type", "montant_ht": "Montant HT", "montant_ttc": "Montant TTC", "statut": "Statut", "compte": "N° Compte"
+                    df_del_trans = df_del_trans[["Supprimer", "libelle", "type", "montant", "Date", "Échéance", "statut", "compte", "id"]].rename(columns={
+                        "libelle": "Libellé / Tiers", "type": "Type", "montant": "Montant (€)", "statut": "Statut", "compte": "N° Compte"
                     })
                 else:
-                    df_del_trans = df_del_trans[["Supprimer", "libelle", "type", "montant_ttc", "Date", "Échéance", "statut", "id"]].rename(columns={
-                        "libelle": "Libellé / Tiers", "type": "Type", "montant_ttc": "Montant", "statut": "Statut"
+                    df_del_trans = df_del_trans[["Supprimer", "libelle", "type", "montant", "Date", "Échéance", "statut", "id"]].rename(columns={
+                        "libelle": "Libellé / Tiers", "type": "Type", "montant": "Montant (€)", "statut": "Statut"
                     })
                 
                 df_del_trans = df_del_trans.reset_index(drop=True)
@@ -402,17 +409,8 @@ else:
                 libelle_defaut = client_fournisseur_choisi if is_pro else ""
                 libelle = st.text_input("Libellé / Nom de la facture ou transaction", value=libelle_defaut)
                 type_flux = st.selectbox("Type de flux", options_flux)
-                montant_saisi = st.number_input("Montant HT (€)" if is_pro else "Montant (€)", min_value=0.0, step=10.0, format="%.2f")
+                montant_saisi = st.number_input("Montant (€)", min_value=0.0, step=10.0, format="%.2f")
             with col_b:
-                if is_pro:
-                    if is_auto_entrepreneur:
-                        st.info("Auto-entrepreneur : Franchise en base de TVA (0%)")
-                        tva = 0.0
-                    else:
-                        tva = st.selectbox("Taux de TVA", [0.0, 5.5, 10.0, 20.0])
-                else:
-                    tva = 0.0
-                
                 date_facture = st.date_input("Date de la transaction", date.today())
                 echeance_facture = st.date_input("Date d'échéance", date.today())
             
@@ -422,18 +420,18 @@ else:
                 if libelle.strip() == "":
                     st.warning("Veuillez renseigner le libellé.")
                 else:
-                    montant_ttc = montant_saisi * (1 + tva / 100)
+                    montant_final = montant_saisi
                     conn = sqlite3.connect("finapp.db")
                     cursor = conn.cursor()
                     cursor.execute("""
-                        INSERT INTO transactions (email, libelle, type, montant_ht, montant_ttc, date, echeance, statut, compte)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (st.session_state.user_email, libelle, type_flux, montant_saisi, montant_ttc, str(date_facture), str(echeance_facture), statut_pait, compte_auto))
+                        INSERT INTO transactions (email, libelle, type, montant, date, echeance, statut, compte)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (st.session_state.user_email, libelle, type_flux, montant_final, str(date_facture), str(echeance_facture), statut_pait, compte_auto))
                     conn.commit()
                     conn.close()
                     
                     st.session_state.form_key += 1
-                    st.success(f"Transaction '{libelle}' ({montant_ttc:.2f} €) enregistrée avec succès (Compte {compte_auto}) !")
+                    st.success(f"Transaction '{libelle}' ({montant_final:.2f} €) enregistrée avec succès (Compte {compte_auto}) !")
                     st.rerun()
 
     if is_auto_entrepreneur:
@@ -446,7 +444,7 @@ else:
                     num_devis = st.text_input("Numéro de devis (ex: DEV-2026-001)", value="DEV-2026-001")
                     client_devis = st.text_input("Nom du client")
                 with col2:
-                    montant_ht_devis = st.number_input("Montant HT du devis (€)", min_value=0.0, step=10.0, format="%.2f")
+                    montant_devis = st.number_input("Montant du devis (€)", min_value=0.0, step=10.0, format="%.2f")
                     date_devis = st.date_input("Date du devis", date.today())
                 
                 statut_devis = st.selectbox("Statut du devis", ["Accepté", "Payé", "Envoyé", "Brouillon"])
@@ -456,13 +454,12 @@ else:
                     if client_devis.strip() == "":
                         st.warning("Veuillez renseigner le nom du client.")
                     else:
-                        montant_ttc_devis = montant_ht_devis
                         conn = sqlite3.connect("finapp.db")
                         cursor = conn.cursor()
                         cursor.execute("""
-                            INSERT INTO devis (email, num_devis, client, montant_ht, montant_ttc, date, statut)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, (st.session_state.user_email, num_devis, client_devis, montant_ht_devis, montant_ttc_devis, str(date_devis), statut_devis))
+                            INSERT INTO devis (email, num_devis, client, montant, date, statut)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, (st.session_state.user_email, num_devis, client_devis, montant_devis, str(date_devis), statut_devis))
                         conn.commit()
                         conn.close()
                         st.session_state.form_key += 1
@@ -471,14 +468,14 @@ else:
 
             st.markdown("### Liste des Devis")
             conn_d = sqlite3.connect("finapp.db")
-            raw_devis = pd.read_sql_query("SELECT id, num_devis, client, montant_ht, montant_ttc, date, statut FROM devis WHERE email = ?", conn_d, params=(st.session_state.user_email,))
+            raw_devis = pd.read_sql_query("SELECT id, num_devis, client, montant, date, statut FROM devis WHERE email = ?", conn_d, params=(st.session_state.user_email,))
             conn_d.close()
             
             if not raw_devis.empty:
                 df_del_devis = raw_devis.copy()
                 df_del_devis.insert(0, "Supprimer", False)
                 df_del_devis = df_del_devis.rename(columns={
-                    "num_devis": "Numéro Devis", "client": "Client", "montant_ht": "Montant HT", "montant_ttc": "Montant TTC", "date": "Date", "statut": "Statut"
+                    "num_devis": "Numéro Devis", "client": "Client", "montant": "Montant (€)", "date": "Date", "statut": "Statut"
                 })
                 df_del_devis = df_del_devis.reset_index(drop=True)
                 df_del_devis.index = range(1, len(df_del_devis) + 1)
@@ -503,10 +500,14 @@ else:
         target_tab_ech = tab4
         target_tab_tiers = tab5
         target_tab_stocks = tab6
+        target_tab_tva = tab7
+        target_tab_emprunts = tab8
     elif is_pro:
         target_tab_ech = tab3
         target_tab_tiers = tab4
         target_tab_stocks = tab5
+        target_tab_tva = tab6
+        target_tab_emprunts = tab7
     else:
         target_tab_ech = tab3
 
@@ -519,8 +520,7 @@ else:
                 plural_pay = "s" if len(a_payer) > 1 else ""
                 st.warning(f"Attention : Vous avez {len(a_payer)} élément{plural_pay} à payer !")
                 for index, row in a_payer.iterrows():
-                    montant_affichage = row["Montant TTC"] if is_pro else row["Montant"]
-                    st.markdown(f"- **{row['Libellé / Tiers']}** ({row['Type']}) : `{montant_affichage:.2f} €` (À payer | **{row['Échéance']}**)")
+                    st.markdown(f"- **{row['Libellé / Tiers']}** ({row['Type']}) : `{row['Montant (€)']:.2f} €` (À payer | **{row['Échéance']}**)")
             else:
                 st.success("Aucun élément en attente de paiement !")
         else:
@@ -617,7 +617,7 @@ else:
                     cat_article = st.text_input("Catégorie")
                 with col2:
                     qte_article = st.number_input("Quantité", min_value=0, step=1, value=10)
-                    prix_article = st.number_input("Prix unitaire HT (€)", min_value=0.0, step=5.0, format="%.2f")
+                    prix_article = st.number_input("Prix unitaire (€)", min_value=0.0, step=5.0, format="%.2f")
                 
                 btn_stock = st.form_submit_button("Ajouter au stock")
                 if btn_stock:
@@ -633,23 +633,16 @@ else:
                         conn.commit()
                         conn.close()
                         st.session_state.form_key += 1
-                        st.success(f"Article '{ref_article}' ajouté au stock !")
+                        st.success("Article ajouté au stock avec succès !")
                         st.rerun()
 
-            st.markdown("### État du Stock (Classé alphabétiquement & numéroté à partir de 1)")
-            conn_s = sqlite3.connect("finapp.db")
-            raw_stocks = pd.read_sql_query("SELECT id, reference, categorie, quantite, prix_ht FROM stocks WHERE email = ? ORDER BY reference", conn_s, params=(st.session_state.user_email,))
-            conn_s.close()
-            
-            if not raw_stocks.empty:
-                df_del_stocks = raw_stocks.copy()
+            st.markdown("### Inventaire Actuel")
+            if not df_stocks.empty:
+                df_del_stocks = df_stocks.copy()
                 df_del_stocks.insert(0, "Supprimer", False)
-                df_del_stocks.rename(columns={
-                    "reference": "Article / Référence", "categorie": "Catégorie", "quantite": "Quantité", "prix_ht": "Prix unitaire HT (€)"
-                }, inplace=True)
-                df_del_stocks = df_del_stocks.reset_index(drop=True)
+                df_del_stocks.reset_index(drop=True, inplace=True)
                 df_del_stocks.index = range(1, len(df_del_stocks) + 1)
-                
+
                 edited_stocks_table = st.data_editor(df_del_stocks, use_container_width=True, hide_index=True)
                 if st.button("Supprimer les articles cochés"):
                     ids_to_del = edited_stocks_table[edited_stocks_table["Supprimer"] == True]["id"].tolist()
@@ -665,22 +658,107 @@ else:
                         st.warning("Aucun article coché.")
             else:
                 st.info("Stock vide.")
-                import streamlit as st
 
-st.set_page_config(
-    page_title="Finapp",
-    page_icon="📊",
-    layout="centered"
-)
+        with target_tab_tva:
+            st.subheader("Gestion et Suivi de la TVA (Collectée & Déductible)")
+            st.markdown("Visualisez automatiquement la TVA sur vos encaissements (collectée) et vos décaissements (déductible).")
+            
+            taux_tva_ref = st.selectbox("Taux de TVA de référence (%)", [20.0, 10.0, 5.5, 2.1], index=0)
+            
+            if not raw_df.empty:
+                tot_rev = raw_df[raw_df["Type"].isin(["Revenu", "Vente de Produits", "Prestation de Services", "Loyers perçus (SCI)"])]["montant"].sum()
+                tot_chg = raw_df[raw_df["Type"] == "Charge / Dépense"]["montant"].sum()
+                
+                tva_collectee = tot_rev - (tot_rev / (1 + taux_tva_ref / 100))
+                tva_deductible = tot_chg - (tot_chg / (1 + taux_tva_ref / 100))
+                tva_nette = tva_collectee - tva_deductible
+                
+                col_t1, col_t2, col_t3 = st.columns(3)
+                col_t1.metric("TVA Collectée (Ventes)", f"{tva_collectee:,.2f} €")
+                col_t2.metric("TVA Déductible (Achats)", f"{tva_deductible:,.2f} €")
+                col_t3.metric("TVA Nette (À décaisser)", f"{tva_nette:,.2f} €")
+                
+                st.markdown("---")
+                st.markdown("### Détail par transaction")
+                df_tva_view = raw_df[["libelle", "type", "montant", "date", "statut"]].copy()
+                df_tva_view["TVA estimée (€)"] = df_tva_view["montant"].apply(lambda x: x - (x / (1 + taux_tva_ref / 100)))
+                df_tva_view = df_tva_view.rename(columns={
+                    "libelle": "Libellé",
+                    "type": "Type de flux",
+                    "montant": "Montant (€)",
+                    "date": "Date",
+                    "statut": "Statut"
+                })
+                st.dataframe(df_tva_view, use_container_width=True)
+            else:
+                st.info("Aucune transaction enregistrée pour calculer la TVA.")
 
-# Forcer le style en mode clair via du CSS injecté
-st.markdown("""
-    <style>
-    .stApp {
-        background-color: #ffffff;
-        color: #262731;
-    }
-    </style>
-""", unsafe_allow_html=True)
+        with target_tab_emprunts:
+            st.subheader("Gestion et Suivi des Emprunts Bancaires")
+            st.markdown("Enregistrez vos prêts professionnels et associez-les aux établissements de crédit de votre annuaire tiers.")
 
+            conn = sqlite3.connect("finapp.db")
+            banques_df = pd.read_sql_query("SELECT nom FROM tiers WHERE email = ? AND role = 'Établissement de crédit'", conn, params=(st.session_state.user_email,))
+            conn.close()
+            
+            liste_banques = banques_df["Nom"].tolist() if not banques_df.empty else []
 
+            with st.form(f"form_emprunt_{st.session_state.form_key}"):
+                col_e1, col_e2 = st.columns(2)
+                with col_e1:
+                    libelle_emprunt = st.text_input("Libellé de l'emprunt (ex: Prêt matériel, Emprunt immobilier)")
+                    if liste_banques:
+                        banque_emprunt = st.selectbox("Établissement de crédit (Banque)", liste_banques)
+                    else:
+                        banque_emprunt = st.text_input("Établissement de crédit (Aucune banque dans l'annuaire - saisie libre)")
+                    montant_emprunt = st.number_input("Montant total emprunté (€)", min_value=0.0, step=1000.0, format="%.2f")
+                with col_e2:
+                    taux_emprunt = st.number_input("Taux d'intérêt annuel (%)", min_value=0.0, step=0.1, format="%.2f")
+                    duree_emprunt = st.number_input("Durée (en mois)", min_value=1, step=1, value=60)
+                    mensualite_emprunt = st.number_input("Mensualité estimée (€)", min_value=0.0, step=50.0, format="%.2f")
+                    date_debut_emprunt = st.date_input("Date de début du prêt", date.today())
+
+                btn_submit_emprunt = st.form_submit_button("Enregistrer l'emprunt")
+
+                if btn_submit_emprunt:
+                    if libelle_emprunt.strip() == "":
+                        st.warning("Veuillez renseigner le libellé de l'emprunt.")
+                    else:
+                        conn = sqlite3.connect("finapp.db")
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                            INSERT INTO emprunts (email, libelle, banque, montant_total, taux, duree_mois, mensualite, date_debut)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (st.session_state.user_email, libelle_emprunt, banque_emprunt, montant_emprunt, taux_emprunt, duree_emprunt, mensualite_emprunt, str(date_debut_emprunt)))
+                        conn.commit()
+                        conn.close()
+                        st.session_state.form_key += 1
+                        st.success("Emprunt bancaire enregistré avec succès !")
+                        st.rerun()
+
+            st.markdown("### Liste de vos Emprunts en cours")
+            conn = sqlite3.connect("finapp.db")
+            df_emprunts_list = pd.read_sql_query("SELECT id, libelle as 'Libellé', banque as 'Banque', montant_total as 'Montant Total (€)', taux as 'Taux (%)', duree_mois as 'Durée (mois)', mensualite as 'Mensualité (€)', date_debut as 'Date de début' FROM emprunts WHERE email = ?", conn, params=(st.session_state.user_email,))
+            conn.close()
+
+            if not df_emprunts_list.empty:
+                df_emprunts_list.insert(0, "Supprimer", False)
+                df_emprunts_list = df_emprunts_list.reset_index(drop=True)
+                df_emprunts_list.index = range(1, len(df_emprunts_list) + 1)
+
+                edited_emprunts_table = st.data_editor(df_emprunts_list, use_container_width=True, hide_index=True)
+                if st.button("Supprimer les emprunts cochés"):
+                    ids_to_del_emp = edited_emprunts_table[edited_emprunts_table["Supprimer"] == True]["id"].tolist()
+                    if ids_to_del_emp:
+                        conn = sqlite3.connect("finapp.db")
+                        cursor = conn.cursor()
+                        cursor.executemany("DELETE FROM emprunts WHERE id = ?", [(i,) for i in ids_to_del_emp])
+                        conn.commit()
+                        conn.close()
+                        st.success("Emprunts sélectionnés supprimés !")
+                        st.rerun()
+                    else:
+                        st.warning("Aucun emprunt coché.")
+            else:
+                st.info("Aucun emprunt bancaire enregistré pour le moment.")
+                
