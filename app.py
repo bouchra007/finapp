@@ -32,6 +32,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- TITRE DANS LA BARRE DE GAUCHE ---
+st.sidebar.title("Mon Application Financière")
+st.sidebar.caption("Bienvenue sur l'application en mode clair.")
+st.sidebar.divider()
+
 def init_db():
     conn = sqlite3.connect("finapp.db")
     cursor = conn.cursor()
@@ -678,6 +683,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Mon Application Financière")
-st.write("Bienvenue sur l'application en mode clair.")
+st.sidebar.title("Mon Application Financière")
+st.sidebar.caption("Plateforme de gestion financière")
+st.sidebar.divider()
+
 
