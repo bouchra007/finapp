@@ -3,53 +3,37 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="Fin'App - ERP Gestion & Facturation", layout="wide")
+import streamlit as st
 
+st.set_page_config(
+    page_title="Fin'App",
+    page_icon="📊",
+    layout="centered"
+)
+
+# Forcer le mode clair sur l'ensemble des éléments HTML et des cartes
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #0F172A;
-        color: #F8FAFC;
+    /* Fond principal */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
     }
-    [data-testid="stSidebar"] {
-        background-color: #1E293B;
-        border-right: 1px solid #334155;
+    /* Textes, titres et labels */
+    h1, h2, h3, h4, h5, h6, p, label, span, div {
+        color: #000000 !important;
     }
-    [data-testid="stSidebar"] label, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p {
-        color: #F8FAFC !important;
+    /* Blocs et cartes */
+    [data-testid="stVerticalBlock"] > div {
+        background-color: #ffffff !important;
     }
-    div.stMetric, div[data-testid="stForm"] {
-        background-color: #1E293B;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-        border: 1px solid #334155;
-    }
-    h1, h2, h3 {
-        color: #F8FAFC !important;
-    }
-    .stButton>button {
-        background-color: #3B82F6;
-        color: white;
-        border-radius: 6px;
-        border: none;
-        font-weight: 600;
-        padding: 0.5rem 1rem;
-    }
-    .stButton>button:hover {
-        background-color: #2563EB;
-        color: white;
-    }
-    .welcome-banner {
-        background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
-        padding: 30px;
-        border-radius: 12px;
-        border: 1px solid #475569;
-        margin-bottom: 25px;
+    /* Champs de texte */
+    input {
+        background-color: #f0f2f6 !important;
+        color: #000000 !important;
     }
     </style>
 """, unsafe_allow_html=True)
-
 def init_db():
     conn = sqlite3.connect("finapp.db")
     cursor = conn.cursor()
@@ -677,4 +661,24 @@ else:
                     else:
                         st.warning("Aucun article coché.")
             else:
-                st.info("Stock vide.")
+                st.info("Stock vide.")import streamlit as st
+
+st.set_page_config(
+    page_title="Finapp",
+    page_icon="📊",
+    layout="centered"
+)
+
+# Forcer le style en mode clair via du CSS injecté
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #ffffff;
+        color: #262731;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title("Mon Application Financière")
+st.write("Bienvenue sur l'application en mode clair.")
+
